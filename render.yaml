@@ -1,0 +1,107 @@
+# render.yaml — Render 一鍵部署設定（Bot + Web 合一，付費 PostgreSQL）
+#
+# 使用方式：
+#   把這個檔案放在 Git repo 根目錄
+#   Render Dashboard → New → Blueprint → 選你的 repo → 自動建立
+
+services:
+
+  # ── Bot + Web 合一（Web Service）────────────────────────────────────────
+  # 用 Web Service 而非 Worker，因為 Flask 需要對外 port 讓 Render 健康檢查
+  - type: web
+    name: cpbl-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    plan: starter              # 付費方案（$7/月），不會休眠，資源較穩定
+    envVars:
+      # ── 必填（在 Render Dashboard 手動填入）──
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: GUILD_ID
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # ── 資料庫（自動從下方 databases 取得）──
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cpbl-db
+          property: connectionString
+
+      # ── Flask 設定 ──
+      - key: SECRET_KEY
+        generateValue: true    # Render 自動產生隨機值
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: RENDER
+        value: "true"          # 讓 bot.py 知道跑在 Render 環境上
+
+      # ── 頻道 ID（在 Dashboard 填入）──
+      - key: WELCOME_CHANNEL_ID
+        sync: false
+      - key: NEWS_CHANNEL_ID
+        sync: false
+      - key: TICKET_LISTING_CHANNEL_ID
+        sync: false
+      - key: GALLERY_CHANNEL_ID
+        sync: false
+      - key: ELECTION_CHANNEL_ID
+        sync: false
+      - key: DRAFT_CHANNEL_ID
+        sync: false
+      - key: LOG_CHANNEL_ID
+        sync: false
+
+      # ── 身分組 ID（在 Dashboard 填入）──
+      - key: ROLE_LIONS
+        sync: false
+      - key: ROLE_ELEPHANTS
+        sync: false
+      - key: ROLE_GUARDIANS
+        sync: false
+      - key: ROLE_HAWKS
+        sync: false
+      - key: ROLE_MONKEYS
+        sync: false
+      - key: ROLE_BEARS
+        sync: false
+      - key: ROLE_UNVERIFIED
+        sync: false
+      - key: ROLE_VERIFIED
+        sync: false
+      - key: ROLE_VIP
+        sync: false
+      - key: ROLE_MODERATOR
+        sync: false
+      - key: ROLE_BLACKLIST
+        sync: false
+
+      # ── 點數設定（預設值，可視需求調整）──
+      - key: DAILY_CHECKIN_POINTS
+        value: "10"
+      - key: POST_POINTS
+        value: "2"
+      - key: LIKE_RECEIVED_POINTS
+        value: "5"
+      - key: POST_COOLDOWN_SECONDS
+        value: "300"
+      - key: BET_MIN
+        value: "10"
+      - key: BET_MAX
+        value: "5000"
+
+      # ── 選填 ──
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: YT_CHANNEL_IDS
+        sync: false
+      - key: VIP_WEBHOOK_SECRET
+        sync: false
+
+# ── PostgreSQL 資料庫（付費方案，資料永久保存）────────────────────────────
+databases:
+  - name: cpbl-db
+    databaseName: cpbl
+    user: cpbl
+    plan: starter              # 付費方案（$7/月），資料永久保存，不會在 90 天後清除
