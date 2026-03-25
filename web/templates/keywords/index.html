@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}關鍵字詞庫{% endblock %}
+{% block topbar_title %}迷因關鍵字管理{% endblock %}
+{% block content %}
+<div class="page-header"><h2>迷因關鍵字詞庫</h2><p>設定觸發詞，Bot 在頻道偵測到關鍵字時自動回應</p></div>
+
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header"><span class="card-title">新增關鍵字</span></div>
+    <form method="POST" action="{{ url_for('keywords.add') }}">
+      <div class="form-group"><label class="form-label">觸發詞</label><input name="trigger" class="form-input" placeholder="例：木棒打擊" required></div>
+      <div class="form-group"><label class="form-label">Bot 回應內容</label><textarea name="response" class="form-textarea" placeholder="例：全壘打！" required></textarea></div>
+      <button type="submit" class="btn btn-primary">儲存關鍵字</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">說明</span></div>
+    <div style="color:#94a3b8;font-size:13px;line-height:1.9">
+      <p>當任何頻道訊息包含「觸發詞」時，Bot 會自動在同一頻道發送「回應內容」。</p>
+      <p style="margin-top:8px">可以用來設定迷因詞、球隊加油口號、緊急公告觸發詞等。</p>
+      <p style="margin-top:8px">觸發詞不區分大小寫，但會比對中文全字。</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">所有關鍵字（{{ keywords|length }}）</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>觸發詞</th><th>回應內容</th><th>狀態</th><th>建立時間</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for kw in keywords %}
+      <tr>
+        <td><code style="background:#0d0f14;padding:2px 8px;border-radius:4px;color:#f5a623">{{ kw.trigger }}</code></td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8">{{ kw.response }}</td>
+        <td><span class="pill {% if kw.is_active %}pill-open{% else %}pill-closed{% endif %}">{% if kw.is_active %}啟用{% else %}停用{% endif %}</span></td>
+        <td class="td-mono">{{ kw.created_at[:10] }}</td>
+        <td style="display:flex;gap:6px">
+          <form method="POST" action="{{ url_for('keywords.toggle', kid=kw.id) }}">
+            <button type="submit" class="btn btn-ghost btn-sm">{% if kw.is_active %}停用{% else %}啟用{% endif %}</button>
+          </form>
+          <form method="POST" action="{{ url_for('keywords.delete', kid=kw.id) }}" onsubmit="return confirm('確認刪除？')">
+            <button type="submit" class="btn btn-danger btn-sm">刪除</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b">尚無關鍵字</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

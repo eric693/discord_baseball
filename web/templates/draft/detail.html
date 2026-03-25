@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}選秀 #{{ sess.id }}{% endblock %}
+{% block topbar_title %}選秀詳情{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+  <div>
+    <h2>{{ sess.title }}</h2>
+    <p>選秀 #{{ sess.id }} | <span class="pill {% if sess.status=='active' %}pill-open{% elif sess.status=='completed' %}pill-won{% else %}pill-closed{% endif %}">{{ sess.status }}</span></p>
+  </div>
+  <a href="{{ url_for('draft.index') }}" class="btn btn-ghost">返回列表</a>
+</div>
+
+<!-- CSV Import -->
+{% if sess.status == 'setup' %}
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header"><span class="card-title">匯入球員名單（CSV）</span></div>
+  <form method="POST" action="{{ url_for('draft.import_players', sid=sess.id) }}" enctype="multipart/form-data">
+    <div style="display:flex;align-items:flex-end;gap:12px">
+      <div class="form-group" style="margin:0;flex:1">
+        <label class="form-label">選擇 CSV 檔案（欄位：姓名,位置,母隊,補充資料）</label>
+        <input name="csv_file" type="file" accept=".csv" class="form-input" required>
+      </div>
+      <button type="submit" class="btn btn-primary">匯入球員</button>
+    </div>
+    <p style="color:#64748b;font-size:11px;margin-top:6px">CSV 格式範例：王志傑,先發投手,統一獅,ERA 3.12</p>
+  </form>
+</div>
+{% endif %}
+
+<div class="grid-2" style="margin-bottom:20px">
+  <!-- Teams -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">選秀隊伍（{{ teams|length }}）</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>順位</th><th>隊伍</th><th>GM</th><th>已選球員</th></tr></thead>
+      <tbody>
+      {% for t in teams %}
+        {% set picked = players | selectattr('drafted_by', 'equalto', t.id) | list | length %}
+        <tr>
+          <td style="color:#f5a623;font-weight:700">{{ t.pick_order }}</td>
+          <td><strong>{{ t.team_name }}</strong></td>
+          <td class="td-mono" style="font-size:12px">{{ t.gm_discord_id or '—' }}</td>
+          <td>{{ picked }} 人</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" style="text-align:center;padding:16px;color:#64748b">使用 /新增選秀隊伍 指令新增</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">選秀概況</span></div>
+    {% set total = players|length %}
+    {% set drafted = players | selectattr('drafted_by') | list | length %}
+    {% set remaining = total - drafted %}
+    <div class="stat-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin:0">
+      <div class="stat-card blue" style="padding:14px">
+        <div class="stat-label">總球員數</div><div class="stat-value" style="font-size:26px">{{ total }}</div>
+      </div>
+      <div class="stat-card green" style="padding:14px">
+        <div class="stat-label">已選走</div><div class="stat-value" style="font-size:26px">{{ drafted }}</div>
+      </div>
+      <div class="stat-card yellow" style="padding:14px">
+        <div class="stat-label">剩餘可選</div><div class="stat-value" style="font-size:26px">{{ remaining }}</div>
+      </div>
+      <div class="stat-card red" style="padding:14px">
+        <div class="stat-label">回合數</div><div class="stat-value" style="font-size:26px">{{ sess.rounds }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Players -->
+<div class="card">
+  <div class="card-header"><span class="card-title">球員名單</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>順位</th><th>姓名</th><th>位置</th><th>母隊</th><th>補充</th><th>被選走</th></tr></thead>
+    <tbody>
+    {% for p in players %}
+      <tr {% if p.drafted_by %}style="opacity:.55"{% endif %}>
+        <td style="color:#f5a623">{% if p.pick_number %}#{{ p.pick_number }}{% else %}—{% endif %}</td>
+        <td><strong>{{ p.name }}</strong></td>
+        <td>{{ p.position or '—' }}</td>
+        <td>{{ p.team_origin or '—' }}</td>
+        <td style="color:#64748b;font-size:12px">{{ p.stats or '—' }}</td>
+        <td>
+          {% if p.drafted_by %}
+            {% set team = teams | selectattr('id', 'equalto', p.drafted_by) | first %}
+            <span class="pill pill-won">{{ team.team_name if team else '已選' }}</span>
+          {% else %}
+            <span class="pill pill-open">可選</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b">尚無球員，請先匯入 CSV</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

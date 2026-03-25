@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ member.username }}{% endblock %}
+{% block topbar_title %}成員詳情{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+  <div><h2>{{ member.username }}</h2><p class="td-mono">{{ member.discord_id }}</p></div>
+  <a href="{{ url_for('members.index') }}" class="btn btn-ghost">返回列表</a>
+</div>
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header"><span class="card-title">基本資料</span></div>
+    <table><tbody>
+      <tr><td style="color:#64748b;width:100px">球隊</td><td>{{ member.team or '—' }}</td></tr>
+      <tr><td style="color:#64748b">點數</td><td style="color:#f5a623;font-weight:700">{{ member.points }}</td></tr>
+      <tr><td style="color:#64748b">累計獲得</td><td>{{ member.total_earned }}</td></tr>
+      <tr><td style="color:#64748b">信用評分</td><td>{{ member.credit_score }}</td></tr>
+      <tr><td style="color:#64748b">VIP</td><td>{% if member.is_vip %}<span class="pill pill-vip">是</span>{% else %}否{% endif %}</td></tr>
+      <tr><td style="color:#64748b">封禁</td><td>{% if member.is_banned %}<span class="pill pill-banned">是</span>{% else %}否{% endif %}</td></tr>
+      <tr><td style="color:#64748b">加入時間</td><td class="td-mono">{{ member.joined_at[:10] }}</td></tr>
+    </tbody></table>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">操作</span></div>
+    <form method="POST" action="{{ url_for('members.adjust_points', discord_id=member.discord_id) }}" style="margin-bottom:16px">
+      <div class="form-group">
+        <label class="form-label">調整點數（負數為扣除）</label>
+        <input name="amount" type="number" class="form-input" placeholder="例：100 或 -50" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">原因</label>
+        <input name="reason" class="form-input" value="後台手動調整">
+      </div>
+      <button type="submit" class="btn btn-primary">確認調整</button>
+    </form>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <form method="POST" action="{{ url_for('members.toggle_ban', discord_id=member.discord_id) }}">
+        <button type="submit" class="btn {% if member.is_banned %}btn-green{% else %}btn-danger{% endif %}">
+          {% if member.is_banned %}解除封禁{% else %}封禁用戶{% endif %}
+        </button>
+      </form>
+      <form method="POST" action="{{ url_for('members.toggle_vip', discord_id=member.discord_id) }}">
+        <button type="submit" class="btn btn-ghost">
+          {% if member.is_vip %}移除 VIP{% else %}授予 VIP{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">最近點數紀錄</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>時間</th><th>金額</th><th>原因</th></tr></thead>
+      <tbody>
+      {% for t in txns %}
+        <tr>
+          <td class="td-mono">{{ t.created_at[:10] }}</td>
+          <td style="color:{% if t.amount>0 %}#22c55e{% else %}#e84545{% endif %};font-weight:700">{% if t.amount>0 %}+{% endif %}{{ t.amount }}</td>
+          <td style="color:#94a3b8;font-size:12px">{{ t.reason }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" style="text-align:center;padding:16px;color:#64748b">無紀錄</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">違規紀錄</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>時間</th><th>類型</th><th>詳情</th></tr></thead>
+      <tbody>
+      {% for v in violations %}
+        <tr>
+          <td class="td-mono">{{ v.created_at[:10] }}</td>
+          <td><span class="pill pill-banned">{{ v.type }}</span></td>
+          <td style="color:#94a3b8;font-size:12px">{{ v.detail or '—' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3" style="text-align:center;padding:16px;color:#64748b">無違規紀錄</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}違規與工單{% endblock %}
+{% block topbar_title %}違規與工單{% endblock %}
+{% block content %}
+<div class="page-header"><h2>違規與工單</h2><p>違規紀錄、客服工單處理（版主視角）</p></div>
+
+<div class="grid-2">
+  <!-- Tickets -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">待處理工單（{{ tickets|length }}）</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>用戶</th><th>類別</th><th>標題</th><th>時間</th><th>操作</th></tr></thead>
+      <tbody>
+      {% for t in tickets %}
+        <tr>
+          <td class="td-mono">#{{ t.id }}</td>
+          <td>{{ t.username }}</td>
+          <td><span class="pill pill-pending">{{ t.category }}</span></td>
+          <td>{{ t.title }}</td>
+          <td class="td-mono">{{ t.created_at[:10] }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('moderation.close_ticket', tid=t.id) }}" style="display:flex;gap:6px">
+              <input name="note" class="form-input" style="width:100px;padding:4px 8px;font-size:11px" placeholder="備註">
+              <button type="submit" class="btn btn-green btn-sm">關閉</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b">目前沒有待處理工單</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- Recent violations -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">最近違規紀錄</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>時間</th><th>用戶</th><th>類型</th><th>詳情</th></tr></thead>
+      <tbody>
+      {% for v in violations %}
+        <tr>
+          <td class="td-mono">{{ v.created_at[:10] }}</td>
+          <td><a href="{{ url_for('members.detail', discord_id=v.discord_id) }}" style="color:#3b82f6;text-decoration:none">{{ v.username }}</a></td>
+          <td><span class="pill pill-banned">{{ v.type }}</span></td>
+          <td style="color:#94a3b8;font-size:12px">{{ (v.detail or '')[:60] }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" style="text-align:center;padding:20px;color:#64748b">暫無違規紀錄</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

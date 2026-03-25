@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}售票亭{% endblock %}
+{% block topbar_title %}售票亭管理{% endblock %}
+{% block content %}
+<div class="page-header"><h2>售票亭</h2><p>球票讓渡列表，監控黃牛與詐騙行為</p></div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">有效票券（{{ listings|length }}）</span>
+    <span style="color:#64748b;font-size:12px">格式不符的發文已由 Bot 自動刪除</span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>發布者</th><th>信用</th><th>比賽</th><th>日期</th><th>座位</th><th>票價</th><th>張數</th><th>聯絡</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for l in listings %}
+      <tr>
+        <td class="td-mono">#{{ l.id }}</td>
+        <td>
+          <a href="{{ url_for('members.detail', discord_id=l.discord_id) }}" style="color:#3b82f6;text-decoration:none">{{ l.username }}</a>
+        </td>
+        <td>
+          <span style="color:{% if l.credit_score >= 80 %}#22c55e{% elif l.credit_score >= 50 %}#f5a623{% else %}#e84545{% endif %};font-weight:700">
+            {{ l.credit_score }}
+          </span>
+        </td>
+        <td>{{ l.team_home }} vs {{ l.team_away }}</td>
+        <td class="td-mono">{{ l.game_date }}</td>
+        <td>{{ l.seat_section }}</td>
+        <td style="color:#f5a623;font-weight:700">{{ l.price }}</td>
+        <td>{{ l.quantity }}</td>
+        <td style="color:#94a3b8;font-size:12px">{{ l.contact }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('tickets.close_listing', lid=l.id) }}" style="display:inline">
+            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('確認下架此票券？')">下架</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="10" style="text-align:center;padding:24px;color:#64748b">目前沒有有效票券</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

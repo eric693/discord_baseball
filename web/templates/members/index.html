@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}成員管理{% endblock %}
+{% block topbar_title %}成員管理{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>成員管理</h2>
+  <p>查詢、調整玩家點數與狀態</p>
+</div>
+
+<!-- Search -->
+<div class="card" style="margin-bottom:18px">
+  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <div class="form-group" style="margin:0;flex:1;min-width:180px">
+      <label class="form-label">搜尋</label>
+      <input name="q" class="form-input" placeholder="用戶名或 Discord ID" value="{{ q }}">
+    </div>
+    <div class="form-group" style="margin:0;min-width:130px">
+      <label class="form-label">球隊</label>
+      <select name="team" class="form-select">
+        <option value="">全部</option>
+        {% for t in teams %}<option value="{{ t }}" {% if team==t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">搜尋</button>
+    <a href="{{ url_for('members.index') }}" class="btn btn-ghost">重置</a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">共 {{ total }} 位成員</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>用戶名</th><th>Discord ID</th><th>球隊</th><th>點數</th><th>信用</th><th>狀態</th><th>操作</th></tr></thead>
+      <tbody>
+      {% for m in members %}
+        <tr>
+          <td><strong>{{ m.username }}</strong></td>
+          <td class="td-mono">{{ m.discord_id }}</td>
+          <td>{{ m.team or '—' }}</td>
+          <td style="font-weight:700;color:#f5a623">{{ m.points }}</td>
+          <td>{{ m.credit_score }}</td>
+          <td>
+            {% if m.is_banned %}<span class="pill pill-banned">封禁</span>
+            {% elif m.is_vip %}<span class="pill pill-vip">VIP</span>
+            {% else %}<span class="pill pill-open">正常</span>{% endif %}
+          </td>
+          <td><a href="{{ url_for('members.detail', discord_id=m.discord_id) }}" class="btn btn-ghost btn-sm">詳情</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b">沒有找到成員</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination -->
+  <div class="pagination">
+    {% set total_pages = (total // limit) + (1 if total % limit else 0) %}
+    {% for p in range(1, total_pages+1) %}
+      <a href="?q={{ q }}&team={{ team }}&page={{ p }}" class="page-btn {% if p==page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

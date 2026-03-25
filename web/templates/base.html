@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}CPBL Bot 後台{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Variables ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:       #0d0f14;
+  --surface:  #151821;
+  --card:     #1c2030;
+  --border:   #252a3a;
+  --accent:   #e84545;
+  --accent2:  #f5a623;
+  --blue:     #3b82f6;
+  --green:    #22c55e;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --heading:  'Bebas Neue', sans-serif;
+  --body:     'Noto Sans TC', sans-serif;
+  --radius:   10px;
+  --shadow:   0 4px 24px rgba(0,0,0,.45);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:14px;display:flex;min-height:100vh}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:220px;min-width:220px;background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sidebar-logo{
+  padding:24px 20px 16px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-logo h1{
+  font-family:var(--heading);font-size:26px;
+  color:var(--accent);letter-spacing:1px;line-height:1;
+}
+.sidebar-logo span{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 0}
+.nav-section{padding:8px 20px 4px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 20px;color:var(--muted);text-decoration:none;
+  border-left:3px solid transparent;transition:all .18s;font-size:13.5px;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(232,69,69,.08)}
+.nav-icon{width:16px;text-align:center;flex-shrink:0}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.sidebar-footer a{font-size:12px;color:var(--muted);text-decoration:none}
+.sidebar-footer a:hover{color:var(--accent)}
+
+/* ── Main content ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{
+  height:56px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;position:sticky;top:0;z-index:10;
+}
+.topbar-title{font-family:var(--heading);font-size:20px;letter-spacing:.5px}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700}
+.badge-red{background:rgba(232,69,69,.15);color:var(--accent)}
+.badge-green{background:rgba(34,197,94,.12);color:var(--green)}
+.badge-blue{background:rgba(59,130,246,.12);color:var(--blue)}
+.badge-yellow{background:rgba(245,166,35,.12);color:var(--accent2)}
+.topbar-user{font-size:13px;color:var(--muted)}
+
+.content{padding:28px;flex:1}
+
+/* ── Cards ── */
+.page-header{margin-bottom:24px}
+.page-header h2{font-family:var(--heading);font-size:28px;letter-spacing:.5px}
+.page-header p{color:var(--muted);font-size:13px;margin-top:3px}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-family:var(--heading);font-size:16px;letter-spacing:.5px;color:var(--text)}
+
+/* ── Stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.stat-card.red::before{background:var(--accent)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.blue::before{background:var(--blue)}
+.stat-card.yellow::before{background:var(--accent2)}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px}
+.stat-value{font-family:var(--heading);font-size:32px;letter-spacing:1px;line-height:1}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* ── Grid ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse}
+thead th{
+  padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+tbody td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.025)}
+.td-mono{font-family:monospace;font-size:12px;color:var(--muted)}
+
+/* ── Forms ── */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.form-input,.form-select,.form-textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--body);font-size:13px;
+  outline:none;transition:border-color .15s;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-row{display:flex;gap:12px}
+.form-row .form-group{flex:1}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border:none;border-radius:6px;
+  font-family:var(--body);font-size:13px;font-weight:500;
+  cursor:pointer;text-decoration:none;transition:opacity .15s,transform .1s;white-space:nowrap;
+}
+.btn:hover{opacity:.85}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-ghost{background:rgba(255,255,255,.07);color:var(--text)}
+.btn-danger{background:rgba(232,69,69,.2);color:var(--accent);border:1px solid rgba(232,69,69,.3)}
+.btn-sm{padding:4px 10px;font-size:12px}
+
+/* ── Alert / Flash ── */
+.alerts{margin-bottom:18px}
+.alert{padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:8px;border-left:3px solid}
+.alert-info{background:rgba(59,130,246,.1);border-color:var(--blue);color:#93c5fd}
+.alert-error{background:rgba(232,69,69,.1);border-color:var(--accent);color:#fca5a5}
+.alert-success{background:rgba(34,197,94,.1);border-color:var(--green);color:#86efac}
+
+/* ── Status pills ── */
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.pill-open{background:rgba(34,197,94,.15);color:var(--green)}
+.pill-closed,.pill-settled,.pill-cancelled{background:rgba(100,116,139,.15);color:var(--muted)}
+.pill-pending{background:rgba(245,166,35,.15);color:var(--accent2)}
+.pill-won{background:rgba(34,197,94,.15);color:var(--green)}
+.pill-lost{background:rgba(232,69,69,.15);color:var(--accent)}
+.pill-banned{background:rgba(232,69,69,.2);color:var(--accent)}
+.pill-vip{background:rgba(245,166,35,.15);color:var(--accent2)}
+
+/* ── Chart placeholder ── */
+.chart-box{height:200px;position:relative}
+canvas{max-width:100%}
+
+/* ── Pagination ── */
+.pagination{display:flex;gap:6px;align-items:center;margin-top:16px}
+.page-btn{
+  padding:5px 11px;border-radius:5px;background:var(--card);border:1px solid var(--border);
+  color:var(--muted);text-decoration:none;font-size:12px;transition:all .15s;
+}
+.page-btn:hover,.page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>CPBL</h1>
+    <span>Admin Panel</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">總覽</div>
+    <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint=='dashboard.index' %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 數據儀表板
+    </a>
+
+    <div class="nav-section">社群管理</div>
+    <a href="{{ url_for('members.index') }}" class="nav-item {% if 'members.' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 成員管理
+    </a>
+    <a href="{{ url_for('moderation.index') }}" class="nav-item {% if 'moderation.' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 違規與工單
+    </a>
+    <a href="{{ url_for('keywords.index') }}" class="nav-item {% if 'keywords.' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 關鍵字詞庫
+    </a>
+
+    <div class="nav-section">點數與商城</div>
+    <a href="{{ url_for('shop.index') }}" class="nav-item {% if 'shop.' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 商城管理
+    </a>
+
+    <div class="nav-section">賽事</div>
+    <a href="{{ url_for('betting.index') }}" class="nav-item {% if 'betting.' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 賭盤管理
+    </a>
+    <a href="{{ url_for('tickets.index') }}" class="nav-item {% if 'tickets.' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 售票亭
+    </a>
+
+    <div class="nav-section">遊戲</div>
+    <a href="{{ url_for('draft.index') }}" class="nav-item {% if 'draft.' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">&#9632;</span> 模擬選秀
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <span>{{ session.admin_username }} ({{ session.admin_role }})</span><br>
+    <a href="{{ url_for('auth.logout') }}">登出</a>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-title">{% block topbar_title %}CPBL Bot 後台{% endblock %}</div>
+    <div class="topbar-right">
+      <span class="badge badge-green">Online</span>
+      <span class="topbar-user">{{ session.admin_username }}</span>
+    </div>
+  </header>
+
+  <div class="content">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alerts">
+          {% for msg in messages %}
+            <div class="alert alert-info">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+</body>
+</html>

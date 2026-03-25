@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}商城管理{% endblock %}
+{% block topbar_title %}商城管理{% endblock %}
+{% block content %}
+<div class="page-header"><h2>點數商城管理</h2><p>新增商品、下架商品、處理兌換訂單</p></div>
+
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header"><span class="card-title">新增商品</span></div>
+    <form method="POST" action="{{ url_for('shop.add_item') }}">
+      <div class="form-group"><label class="form-label">商品名稱</label><input name="name" class="form-input" required></div>
+      <div class="form-group"><label class="form-label">商品說明</label><input name="description" class="form-input"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">點數費用</label><input name="cost" type="number" class="form-input" min="1" required></div>
+        <div class="form-group"><label class="form-label">庫存（-1=無限）</label><input name="stock" type="number" class="form-input" value="-1"></div>
+      </div>
+      <button type="submit" class="btn btn-primary">新增商品</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">商品列表</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>商品</th><th>費用</th><th>庫存</th><th>狀態</th><th>操作</th></tr></thead>
+      <tbody>
+      {% for it in items %}
+        <tr>
+          <td><strong>{{ it.name }}</strong><br><span style="color:#64748b;font-size:11px">{{ it.description or '' }}</span></td>
+          <td style="color:#f5a623;font-weight:700">{{ it.cost }}</td>
+          <td>{{ '無限' if it.stock == -1 else it.stock }}</td>
+          <td><span class="pill {% if it.is_active %}pill-open{% else %}pill-closed{% endif %}">{% if it.is_active %}上架{% else %}下架{% endif %}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('shop.toggle_item', item_id=it.id) }}" style="display:inline">
+              <button type="submit" class="btn btn-ghost btn-sm">{% if it.is_active %}下架{% else %}上架{% endif %}</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" style="text-align:center;padding:16px;color:#64748b">尚無商品</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">最近兌換訂單</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>時間</th><th>用戶</th><th>商品</th><th>狀態</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for o in orders %}
+      <tr>
+        <td class="td-mono">#{{ o.id }}</td>
+        <td class="td-mono">{{ o.created_at[:10] }}</td>
+        <td>{{ o.username }}</td>
+        <td>{{ o.item_name }}</td>
+        <td><span class="pill pill-{{ o.status }}">{{ {'pending':'處理中','completed':'已完成','cancelled':'已取消'}.get(o.status, o.status) }}</span></td>
+        <td>
+          {% if o.status == 'pending' %}
+          <form method="POST" action="{{ url_for('shop.complete_order', order_id=o.id) }}" style="display:inline">
+            <button type="submit" class="btn btn-green btn-sm">標記完成</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b">尚無訂單</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

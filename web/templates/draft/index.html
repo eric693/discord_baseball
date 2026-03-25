@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}模擬選秀{% endblock %}
+{% block topbar_title %}CPBL 模擬選秀{% endblock %}
+{% block content %}
+<div class="page-header"><h2>模擬選秀管理</h2><p>建立選秀賽事、匯入球員名單、查看選秀結果</p></div>
+
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header"><span class="card-title">建立新選秀</span></div>
+    <form method="POST" action="{{ url_for('draft.create') }}">
+      <div class="form-group"><label class="form-label">選秀名稱</label><input name="title" class="form-input" placeholder="例：2025 球季模擬選秀" required></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">選秀回合數</label><input name="rounds" type="number" class="form-input" value="3" min="1"></div>
+        <div class="form-group"><label class="form-label">每回合限時（秒）</label><input name="time_per_pick" type="number" class="form-input" value="180" min="30"></div>
+      </div>
+      <button type="submit" class="btn btn-primary">建立選秀</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">操作流程</span></div>
+    <div style="color:#94a3b8;font-size:13px;line-height:2">
+      <p><span style="color:#f5a623;font-weight:700">1.</span> 建立選秀賽事</p>
+      <p><span style="color:#f5a623;font-weight:700">2.</span> 進入詳情頁，使用 CSV 匯入球員名單</p>
+      <p><span style="color:#f5a623;font-weight:700">3.</span> 在 Discord 使用 <code style="background:#0d0f14;padding:1px 5px;border-radius:3px">/新增選秀隊伍</code> 指派 GM</p>
+      <p><span style="color:#f5a623;font-weight:700">4.</span> 在 Discord 使用 <code style="background:#0d0f14;padding:1px 5px;border-radius:3px">/開始選秀</code> 啟動</p>
+      <p><span style="color:#f5a623;font-weight:700">5.</span> 選秀結束後查看各隊最終陣容</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">選秀賽事列表</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>名稱</th><th>狀態</th><th>回合</th><th>限時</th><th>建立時間</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for s in sessions %}
+      <tr>
+        <td class="td-mono">#{{ s.id }}</td>
+        <td><strong>{{ s.title }}</strong></td>
+        <td><span class="pill {% if s.status=='active' %}pill-open{% elif s.status=='completed' %}pill-won{% else %}pill-closed{% endif %}">{{ {'setup':'準備中','active':'進行中','completed':'已完成'}.get(s.status, s.status) }}</span></td>
+        <td>{{ s.rounds }}</td>
+        <td>{{ s.time_per_pick // 60 }} 分鐘</td>
+        <td class="td-mono">{{ s.created_at[:10] }}</td>
+        <td><a href="{{ url_for('draft.detail', sid=s.id) }}" class="btn btn-ghost btn-sm">詳情/匯入</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b">尚無選秀賽事</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

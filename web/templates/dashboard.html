@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}儀表板 | CPBL Bot{% endblock %}
+{% block topbar_title %}數據儀表板{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>數據儀表板</h2>
+  <p>CPBL 棒球社群即時概覽</p>
+</div>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+  <div class="stat-card blue">
+    <div class="stat-label">總成員數</div>
+    <div class="stat-value">{{ total_members }}</div>
+    <div class="stat-sub">已加入伺服器</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">今日活躍</div>
+    <div class="stat-value">{{ active_today }}</div>
+    <div class="stat-sub">今天曾發言</div>
+  </div>
+  <div class="stat-card yellow">
+    <div class="stat-label">流通點數</div>
+    <div class="stat-value">{{ "{:,}".format(total_points) }}</div>
+    <div class="stat-sub">全社群點數總計</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-label">開放賭盤</div>
+    <div class="stat-value">{{ open_bets }}</div>
+    <div class="stat-sub">目前可下注場次</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label">待處理工單</div>
+    <div class="stat-value">{{ open_tickets }}</div>
+    <div class="stat-sub">需要處理</div>
+  </div>
+  <div class="stat-card yellow">
+    <div class="stat-label">VIP 成員</div>
+    <div class="stat-value">{{ vip_count }}</div>
+    <div class="stat-sub">付費訂閱用戶</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-label">黑名單</div>
+    <div class="stat-value">{{ banned_count }}</div>
+    <div class="stat-sub">被封禁用戶</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">每日活躍人數（近 14 天）</span>
+    </div>
+    <div class="chart-box">
+      <canvas id="activeChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">球隊粉絲分佈</span>
+    </div>
+    <div class="chart-box">
+      <canvas id="teamChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">點數流動（近 14 天）</span>
+    </div>
+    <div class="chart-box">
+      <canvas id="ptsChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">近期賭盤下注量</span>
+    </div>
+    <div class="chart-box">
+      <canvas id="betChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent transactions -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">最近點數交易</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>時間</th><th>用戶</th><th>金額</th><th>原因</th></tr></thead>
+      <tbody>
+      {% for t in recent_txns %}
+        <tr>
+          <td class="td-mono">{{ t.created_at[:16] }}</td>
+          <td>{{ t.username }}</td>
+          <td style="color:{% if t.amount > 0 %}#22c55e{% else %}#e84545{% endif %};font-weight:700">
+            {% if t.amount > 0 %}+{% endif %}{{ t.amount }}
+          </td>
+          <td style="color:#94a3b8">{{ t.reason }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" style="text-align:center;color:#64748b;padding:20px">暫無紀錄</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const CHART_DEFAULTS = {
+  color: '#94a3b8',
+  borderColor: '#252a3a',
+  font: { family: "'Noto Sans TC', sans-serif", size: 11 }
+};
+Chart.defaults.color = CHART_DEFAULTS.color;
+Chart.defaults.borderColor = CHART_DEFAULTS.borderColor;
+Chart.defaults.font = CHART_DEFAULTS.font;
+
+// Active chart
+const activeData = {{ daily_active | tojson }};
+new Chart(document.getElementById('activeChart'), {
+  type: 'line',
+  data: {
+    labels: activeData.map(d => d.day),
+    datasets: [{
+      label: '活躍人數',
+      data: activeData.map(d => d.cnt),
+      borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.12)',
+      fill: true, tension: .35, pointRadius: 3
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { color: '#1c2030' } }, y: { grid: { color: '#1c2030' }, beginAtZero: true } }
+  }
+});
+
+// Team pie chart
+const teamData = {{ team_dist | tojson }};
+const TEAM_COLORS = ['#e84545','#3b82f6','#f5a623','#22c55e','#a855f7','#f97316','#64748b'];
+new Chart(document.getElementById('teamChart'), {
+  type: 'doughnut',
+  data: {
+    labels: teamData.map(d => d.team),
+    datasets: [{ data: teamData.map(d => d.cnt), backgroundColor: TEAM_COLORS, borderWidth: 0 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 10 } } },
+    cutout: '62%'
+  }
+});
+
+// Points chart
+const ptsData = {{ daily_pts | tojson }};
+new Chart(document.getElementById('ptsChart'), {
+  type: 'bar',
+  data: {
+    labels: ptsData.map(d => d.day),
+    datasets: [
+      { label: '獲得', data: ptsData.map(d => d.earned), backgroundColor: 'rgba(34,197,94,.7)' },
+      { label: '消費', data: ptsData.map(d => d.spent),  backgroundColor: 'rgba(232,69,69,.6)' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { boxWidth: 12 } } },
+    scales: { x: { stacked: false, grid: { color: '#1c2030' } }, y: { grid: { color: '#1c2030' }, beginAtZero: true } }
+  }
+});
+
+// Bet chart
+const betData = {{ recent_bets | tojson }};
+new Chart(document.getElementById('betChart'), {
+  type: 'bar',
+  data: {
+    labels: betData.map(d => d.title.substring(0,10)),
+    datasets: [{ label: '下注量(點)', data: betData.map(d => d.vol || 0), backgroundColor: 'rgba(245,166,35,.7)' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { color: '#1c2030' } }, y: { grid: { color: '#1c2030' }, beginAtZero: true } },
+    indexAxis: 'y'
+  }
+});
+</script>
+{% endblock %}

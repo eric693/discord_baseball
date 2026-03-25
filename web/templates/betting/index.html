@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}賭盤管理{% endblock %}
+{% block topbar_title %}賭盤管理{% endblock %}
+{% block content %}
+<div class="page-header"><h2>賭盤管理</h2><p>開立賭盤、查看下注狀況、一鍵結算派彩</p></div>
+
+<div class="grid-2" style="margin-bottom:20px">
+  <div class="card">
+    <div class="card-header"><span class="card-title">開立新賭盤</span></div>
+    <form method="POST" action="{{ url_for('betting.create') }}">
+      <div class="form-group"><label class="form-label">賭盤標題</label><input name="title" class="form-input" placeholder="例：統一獅 vs 中信兄象 勝負" required></div>
+      <div class="form-group"><label class="form-label">描述（選填）</label><input name="description" class="form-input" placeholder="賽事說明"></div>
+      <div class="form-group">
+        <label class="form-label">選項（逗號分隔）</label>
+        <input name="options" class="form-input" placeholder="例：統一獅贏,中信兄象贏,平局" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">賠率（逗號分隔，對應選項順序）</label>
+        <input name="odds" class="form-input" placeholder="例：1.5,2.0,5.0" required>
+      </div>
+      <div class="form-group"><label class="form-label">截止時間（選填，格式：2025-05-15 18:00:00）</label><input name="closes_at" class="form-input" placeholder="不填表示不限時"></div>
+      <button type="submit" class="btn btn-primary">開立賭盤</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">開立說明</span></div>
+    <div style="color:#94a3b8;font-size:13px;line-height:1.8">
+      <p style="margin-bottom:8px"><strong style="color:#e2e8f0">選項格式</strong><br>用逗號分隔，例如：<code style="background:#0d0f14;padding:2px 6px;border-radius:3px">主隊贏,客隊贏,平局</code></p>
+      <p style="margin-bottom:8px"><strong style="color:#e2e8f0">賠率格式</strong><br>數量與選項一致，例如：<code style="background:#0d0f14;padding:2px 6px;border-radius:3px">1.5,2.0,5.0</code></p>
+      <p style="margin-bottom:8px"><strong style="color:#e2e8f0">結算方式</strong><br>點擊賭盤詳情頁的「結算」按鈕，選擇正確選項即可自動派彩給所有獲勝玩家。</p>
+      <p><strong style="color:#e2e8f0">取消退款</strong><br>比賽取消時可點「關盤」，系統自動退還所有人下注點數。</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">賭盤列表</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>標題</th><th>狀態</th><th>下注人數</th><th>總下注量</th><th>截止時間</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for item in events %}
+      {% set ev = item.ev %}
+      <tr>
+        <td class="td-mono">#{{ ev.id }}</td>
+        <td><strong>{{ ev.title }}</strong></td>
+        <td><span class="pill pill-{{ ev.status }}">{{ {'open':'開放中','settled':'已結算','cancelled':'已取消'}.get(ev.status, ev.status) }}</span></td>
+        <td>{{ item.cnt }}</td>
+        <td style="color:#f5a623">{{ item.total or 0 }}</td>
+        <td class="td-mono">{{ ev.closes_at[:10] if ev.closes_at else '—' }}</td>
+        <td><a href="{{ url_for('betting.detail', event_id=ev.id) }}" class="btn btn-ghost btn-sm">詳情/結算</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b">尚無賭盤</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}
