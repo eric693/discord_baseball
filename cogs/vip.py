@@ -46,7 +46,7 @@ class VIP(commands.Cog):
             c.execute("UPDATE members SET is_vip=0 WHERE discord_id=?", (discord_id,))
         return True
 
-    @app_commands.command(name="給VIP", description="（管理員）手動授予 VIP 身分")
+    @app_commands.command(name="給vip", description="（管理員）手動授予 VIP 身分")
     @app_commands.checks.has_permissions(administrator=True)
     async def give_vip(self, itx: discord.Interaction, member: discord.Member):
         ok = await self.assign_vip(str(member.id))
@@ -55,7 +55,7 @@ class VIP(commands.Cog):
         else:
             await itx.response.send_message("授予失敗，請確認 ROLE_VIP 已設定。", ephemeral=True)
 
-    @app_commands.command(name="移除VIP", description="（管理員）移除 VIP 身分")
+    @app_commands.command(name="移除vip", description="（管理員）移除 VIP 身分")
     @app_commands.checks.has_permissions(administrator=True)
     async def remove_vip(self, itx: discord.Interaction, member: discord.Member):
         ok = await self.revoke_vip(str(member.id))
