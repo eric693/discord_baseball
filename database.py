@@ -51,21 +51,27 @@ class _PGRow:
 
 
 def _adapt_sql(sql: str) -> str:
-    """將 SQLite 語法轉換為 PostgreSQL 語法"""
+    """將 SQLite 語法轉換為 PostgreSQL 語法。
+
+    所有時間欄位存的是 TEXT（格式 'YYYY-MM-DD HH24:MI:SS'），
+    因此 NOW() 也要轉成相同格式的 TEXT，才能做 <= >= 比較，
+    否則 PostgreSQL 會報 'operator does not exist: text <= timestamptz'。
+    """
     # 佔位符 ? → %s
     sql = sql.replace("?", "%s")
-    # datetime('now') → NOW()
-    sql = sql.replace("datetime('now')", "NOW()")
-    sql = sql.replace("date('now')", "CURRENT_DATE")
-    # datetime('now', '-N days') → NOW() - INTERVAL 'N days'
+    # datetime('now') → to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
+    sql = sql.replace("datetime('now')", "to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')")
+    # date('now') → to_char(NOW(), 'YYYY-MM-DD')
+    sql = sql.replace("date('now')", "to_char(NOW(), 'YYYY-MM-DD')")
+    # datetime('now', 'N days') → to_char(NOW() + INTERVAL 'N days', ...)
     sql = re.sub(
         r"datetime\('now',\s*'(-?\d+)\s+days?'\)",
-        lambda m: f"NOW() + INTERVAL '{m.group(1)} days'",
+        lambda m: f"to_char(NOW() + INTERVAL '{m.group(1)} days', 'YYYY-MM-DD HH24:MI:SS')",
         sql
     )
     sql = re.sub(
         r"date\('now',\s*'(-?\d+)\s+days?'\)",
-        lambda m: f"CURRENT_DATE + INTERVAL '{m.group(1)} days'",
+        lambda m: f"to_char(NOW() + INTERVAL '{m.group(1)} days', 'YYYY-MM-DD')",
         sql
     )
     return sql
@@ -257,7 +263,7 @@ CREATE TABLE IF NOT EXISTS members (
     points INTEGER DEFAULT 0, total_earned INTEGER DEFAULT 0,
     credit_score INTEGER DEFAULT 100, is_banned INTEGER DEFAULT 0,
     is_vip INTEGER DEFAULT 0, role TEXT DEFAULT 'member',
-    joined_at TEXT DEFAULT NOW(), last_active TEXT DEFAULT NOW()
+    joined_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'), last_active TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS checkins (
     id SERIAL PRIMARY KEY, discord_id TEXT NOT NULL,
@@ -265,47 +271,47 @@ CREATE TABLE IF NOT EXISTS checkins (
 );
 CREATE TABLE IF NOT EXISTS point_transactions (
     id SERIAL PRIMARY KEY, discord_id TEXT NOT NULL,
-    amount INTEGER NOT NULL, reason TEXT NOT NULL, created_at TEXT DEFAULT NOW()
+    amount INTEGER NOT NULL, reason TEXT NOT NULL, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS shop_items (
     id SERIAL PRIMARY KEY, name TEXT NOT NULL, description TEXT,
     cost INTEGER NOT NULL, stock INTEGER DEFAULT -1, is_active INTEGER DEFAULT 1,
-    image_url TEXT, created_at TEXT DEFAULT NOW()
+    image_url TEXT, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS shop_orders (
     id SERIAL PRIMARY KEY, discord_id TEXT NOT NULL,
-    item_id INTEGER NOT NULL, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT NOW()
+    item_id INTEGER NOT NULL, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS bet_events (
     id SERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT,
     options TEXT NOT NULL, odds TEXT NOT NULL, status TEXT DEFAULT 'open',
-    result TEXT, created_at TEXT DEFAULT NOW(), closes_at TEXT, settled_at TEXT
+    result TEXT, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'), closes_at TEXT, settled_at TEXT
 );
 CREATE TABLE IF NOT EXISTS bets (
     id SERIAL PRIMARY KEY, event_id INTEGER NOT NULL,
     discord_id TEXT NOT NULL, option TEXT NOT NULL,
     amount INTEGER NOT NULL, payout INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'pending', created_at TEXT DEFAULT NOW()
+    status TEXT DEFAULT 'pending', created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS ticket_listings (
     id SERIAL PRIMARY KEY, discord_id TEXT NOT NULL,
     game_date TEXT NOT NULL, team_home TEXT NOT NULL, team_away TEXT NOT NULL,
     seat_section TEXT NOT NULL, seat_row TEXT, seat_num TEXT,
     price INTEGER NOT NULL, quantity INTEGER DEFAULT 1,
-    contact TEXT NOT NULL, status TEXT DEFAULT 'active', created_at TEXT DEFAULT NOW()
+    contact TEXT NOT NULL, status TEXT DEFAULT 'active', created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS ratings (
     id SERIAL PRIMARY KEY, rater_id TEXT NOT NULL, rated_id TEXT NOT NULL,
-    is_positive INTEGER NOT NULL, comment TEXT, created_at TEXT DEFAULT NOW()
+    is_positive INTEGER NOT NULL, comment TEXT, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS violations (
     id SERIAL PRIMARY KEY, discord_id TEXT NOT NULL, type TEXT NOT NULL,
-    detail TEXT, mod_id TEXT, created_at TEXT DEFAULT NOW()
+    detail TEXT, mod_id TEXT, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS elections (
     id SERIAL PRIMARY KEY, title TEXT NOT NULL,
     status TEXT DEFAULT 'accepting_candidates',
-    starts_at TEXT, ends_at TEXT, created_at TEXT DEFAULT NOW()
+    starts_at TEXT, ends_at TEXT, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS candidates (
     id SERIAL PRIMARY KEY, election_id INTEGER NOT NULL,
@@ -314,12 +320,12 @@ CREATE TABLE IF NOT EXISTS candidates (
 CREATE TABLE IF NOT EXISTS election_votes (
     id SERIAL PRIMARY KEY, election_id INTEGER NOT NULL,
     voter_id TEXT NOT NULL, candidate_id INTEGER NOT NULL,
-    created_at TEXT DEFAULT NOW(), UNIQUE(election_id, voter_id)
+    created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'), UNIQUE(election_id, voter_id)
 );
 CREATE TABLE IF NOT EXISTS draft_sessions (
     id SERIAL PRIMARY KEY, title TEXT NOT NULL, status TEXT DEFAULT 'setup',
     rounds INTEGER DEFAULT 3, time_per_pick INTEGER DEFAULT 180,
-    current_pick INTEGER DEFAULT 1, created_at TEXT DEFAULT NOW()
+    current_pick INTEGER DEFAULT 1, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS draft_teams (
     id SERIAL PRIMARY KEY, session_id INTEGER NOT NULL,
@@ -332,22 +338,22 @@ CREATE TABLE IF NOT EXISTS draft_players (
 );
 CREATE TABLE IF NOT EXISTS keywords (
     id SERIAL PRIMARY KEY, trigger TEXT NOT NULL UNIQUE,
-    response TEXT NOT NULL, is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT NOW()
+    response TEXT NOT NULL, is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS feed_cache (
     id SERIAL PRIMARY KEY, source TEXT NOT NULL, ext_id TEXT NOT NULL,
-    pushed_at TEXT DEFAULT NOW(), UNIQUE(source, ext_id)
+    pushed_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'), UNIQUE(source, ext_id)
 );
 CREATE TABLE IF NOT EXISTS admins (
     id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL, role TEXT DEFAULT 'moderator',
-    discord_id TEXT, created_at TEXT DEFAULT NOW()
+    discord_id TEXT, created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
 );
 CREATE TABLE IF NOT EXISTS support_tickets (
     id SERIAL PRIMARY KEY, discord_id TEXT NOT NULL,
     category TEXT NOT NULL, title TEXT NOT NULL, description TEXT,
     status TEXT DEFAULT 'open', assigned_to TEXT,
-    created_at TEXT DEFAULT NOW(), closed_at TEXT
+    created_at TEXT DEFAULT to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS'), closed_at TEXT
 );
 """
 
